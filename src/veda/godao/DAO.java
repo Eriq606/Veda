@@ -435,6 +435,55 @@ public class DAO {
             }
         }
     }
+    public HashMap<String, Object>[] select(Connection connex, String[] columns, String table, String[] where) throws Exception{
+        boolean opened=false;
+        Connection connect=connex;
+        if(connect==null){
+            connect=DAOConnexion.getConnexion(this);
+            opened=true;
+        }
+        String fullQuery="select ";
+        if(columns.length>0){
+            for(String s:columns){
+                fullQuery+=s+",";
+            }
+            fullQuery=fullQuery.substring(0, fullQuery.length()-1);
+        }else{
+            fullQuery+="*";
+        }
+        fullQuery+=" from "+table;
+        if(where.length>0){
+            fullQuery+=" where ";
+            for(String s:where){
+                fullQuery+=s+" and ";
+            }
+            fullQuery=fullQuery.substring(0, fullQuery.length()-5);
+        }
+        try(PreparedStatement statement=connect.prepareStatement(fullQuery)){
+            try(ResultSet result=statement.executeQuery()){
+                LinkedList<HashMap<String, Object>> liste=new LinkedList<>();
+                ResultSetMetaData metadata;
+                HashMap<String, Object> hash;
+                while(result.next()){
+                    hash=new HashMap<>();
+                    metadata=result.getMetaData();
+                    for(int j=1;j<=metadata.getColumnCount();j++){
+                        hash.put(metadata.getColumnName(j), result.getObject(j));
+                    }
+                    liste.add(hash);
+                }
+                HashMap<String, Object>[] resultat=new HashMap[liste.size()];
+                for(int i=0;i<resultat.length;i++){
+                    resultat[i]=liste.get(i);
+                }
+                return resultat;
+            }
+        }finally{
+            if(opened){
+                connect.close();
+            }
+        }
+    }
     public void execute(Connection connex, String query) throws Exception{
         boolean opened=false;
         Connection connect=connex;
