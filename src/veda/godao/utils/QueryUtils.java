@@ -7,9 +7,11 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -61,6 +63,31 @@ public class QueryUtils {
         for(Field f:fields){
             Annotation annote=f.getAnnotation(Column.class);
             if(annote==null){
+                continue;
+            }
+            f.setAccessible(true);
+            Object attr=f.get(o);
+            if(attr==null){
+                continue;
+            }
+            String columnName=annote.annotationType().getMethod("value").invoke(annote).toString();
+            liste.add(columnName);
+            f.setAccessible(false);
+        }
+        String[] colonnes=new String[liste.size()];
+        for(int i=0;i<colonnes.length;i++){
+            colonnes[i]=liste.get(i);
+        }
+        return colonnes;
+    }
+    public static String[] getNotNullColumnNamesWithoutPrimary(Object o) throws Exception{
+        Class c=o.getClass();
+        Field[] fields=c.getDeclaredFields();
+        LinkedList<String> liste=new LinkedList<>();
+        for(Field f:fields){
+            Annotation annote=f.getAnnotation(Column.class);
+            Annotation primary=f.getAnnotation(PrimaryKey.class);
+            if(annote==null||primary!=null){
                 continue;
             }
             f.setAccessible(true);
@@ -132,6 +159,30 @@ public class QueryUtils {
         }
         return colonnes;
     }
+    public static Field[] getNotNullColumnsWithoutPrimary(Object o) throws Exception{
+        Class c=o.getClass();
+        Field[] fields=c.getDeclaredFields();
+        LinkedList<Field> liste=new LinkedList<>();
+        for(Field f:fields){
+            Annotation annote=f.getAnnotation(Column.class);
+            Annotation primary=f.getAnnotation(PrimaryKey.class);
+            if(annote==null||primary!=null){
+                continue;
+            }
+            f.setAccessible(true);
+            Object attr=f.get(o);
+            if(attr==null){
+                continue;
+            }
+            liste.add(f);
+            f.setAccessible(false);
+        }
+        Field[] colonnes=new Field[liste.size()];
+        for(int i=0;i<colonnes.length;i++){
+            colonnes[i]=liste.get(i);
+        }
+        return colonnes;
+    }
     public static HashMap<String, Object> getNotNullColumnValues(Object o) throws Exception{
         HashMap<String, Object> colonnes=new HashMap<>();
         Class c=o.getClass();
@@ -187,6 +238,29 @@ public class QueryUtils {
         }
         return query;
     }
+    public static String getInsertQueryWithoutPrimary(Object o) throws Exception{
+        Class c=o.getClass();
+        Annotation annote=c.getAnnotation(Table.class);
+        String table=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
+        String[] colonnes=getNotNullColumnNamesWithoutPrimary(o);
+        String query="insert into "+table+"(";
+        for(int i=0;i<colonnes.length;i++){
+            if(i==colonnes.length-1){
+                query+=colonnes[i]+")";
+                break;
+            }
+            query+=colonnes[i]+", ";
+        }
+        query+=" values(";
+        for(int i=0;i<colonnes.length;i++){
+            if(i==colonnes.length-1){
+                query+="?)";
+                break;
+            }
+            query+="?, ";
+        }
+        return query;
+    }
     public static String getInsertQueryWithPrimary(Class c) throws Exception{
         Annotation annote=c.getAnnotation(Table.class);
         String table=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
@@ -212,13 +286,19 @@ public class QueryUtils {
     public static String getSelectQuery(Class c) throws Exception{
         Annotation annote=c.getAnnotation(Table.class);
         String table=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
-        String query="select * from "+table;
+        Field primaryField=getPrimaryField(c);
+        annote=primaryField.getAnnotation(Column.class);
+        String primaryColumn=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
+        String query="select * from "+table+" order by "+primaryColumn;
         return query;
     }
     public static String getSelectQuery(Class c, int limit, int offset) throws Exception{
         Annotation annote=c.getAnnotation(Table.class);
         String table=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
-        String query="select * from "+table+" limit "+limit+" offset "+offset;
+        Field primaryField=getPrimaryField(c);
+        annote=primaryField.getAnnotation(Column.class);
+        String primaryColumn=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
+        String query="select * from "+table+" order by "+primaryColumn+" limit "+limit+" offset "+offset;
         return query;
     }
     public static String getSelectQuery(Class c, Object where) throws Exception{
@@ -226,6 +306,9 @@ public class QueryUtils {
         String table=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
         String[] columns=getNotNullColumnNames(where);
         String query="select * from "+table+" where ";
+        Field primaryField=getPrimaryField(c);
+        annote=primaryField.getAnnotation(Column.class);
+        String primaryColumn=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
         for(int i=0; i<columns.length; i++){
             if(i==columns.length-1){
                 query+=columns[i]+" = ?";
@@ -233,6 +316,7 @@ public class QueryUtils {
             }
             query+=columns[i]+" = ? and ";
         }
+        query+=" order by "+primaryColumn;
         return query;
     }
     public static String getUpdateQuery(Class c, Object change, Object where) throws Exception{
@@ -303,6 +387,8 @@ public class QueryUtils {
                     statemnt.setDate(i+1, Date.valueOf((LocalDate)foreignId));
                 }else if(fieldType.equals("LocalDateTime")){
                     statemnt.setTimestamp(i+1, Timestamp.valueOf((LocalDateTime)foreignId));
+                }else if(fieldType.equals("LocalTime")){
+                    statement.setTime(i+1, Time.valueOf((LocalTime)foreignId));
                 }
                 primary.setAccessible(false);
                 continue;
@@ -319,6 +405,8 @@ public class QueryUtils {
                 statemnt.setDate(i+1, Date.valueOf((LocalDate)fields[i].get(o)));
             }else if(fieldType.equals("LocalDateTime")){
                 statemnt.setTimestamp(i+1, Timestamp.valueOf((LocalDateTime)fields[i].get(o)));
+            }else if(fieldType.equals("LocalTime")){
+                statement.setTime(i+1, Time.valueOf((LocalTime)fields[i].get(o)));
             }
         }
         return statemnt;
@@ -347,6 +435,8 @@ public class QueryUtils {
                     statemnt.setDate(i+1, Date.valueOf((LocalDate)foreignId));
                 }else if(fieldType.equals("LocalDateTime")){
                     statemnt.setTimestamp(i+1, Timestamp.valueOf((LocalDateTime)foreignId));
+                }else if(fieldType.equals("LocalTime")){
+                    statement.setTime(i+1, Time.valueOf((LocalTime)foreignId));
                 }
                 primary.setAccessible(false);
                 upOffset++;
@@ -364,6 +454,8 @@ public class QueryUtils {
                 statemnt.setDate(i+1, Date.valueOf((LocalDate)fields[i-offset].get(o)));
             }else if(fieldType.equals("LocalDateTime")){
                 statemnt.setTimestamp(i+1, Timestamp.valueOf((LocalDateTime)fields[i-offset].get(o)));
+            }else if(fieldType.equals("LocalTime")){
+                statement.setTime(i+1, Time.valueOf((LocalTime)fields[i].get(o)));
             }
             upOffset++;
         }
@@ -399,6 +491,8 @@ public class QueryUtils {
                     primary.set(foreignValue, result.getDate(entry.getValue()).toLocalDate());
                 }else if(fieldType.equals("LocalDateTime")){
                     primary.set(foreignValue, result.getTimestamp(entry.getValue()).toLocalDateTime());
+                }else if(fieldType.equals("LocalTime")){
+                    primary.set(foreignValue, result.getTime(entry.getValue()).toLocalTime());
                 }
                 Object objet=dao.select(connex, type, foreignValue)[0];
                 f.set(obj, objet);
@@ -418,6 +512,8 @@ public class QueryUtils {
                 f.set(obj, result.getDate(entry.getValue()).toLocalDate());
             }else if(fieldType.equals("LocalDateTime")){
                 f.set(obj, result.getTimestamp(entry.getValue()).toLocalDateTime());
+            }else if(fieldType.equals("LocalTime")){
+                f.set(obj, result.getTime(entry.getValue()).toLocalTime());
             }
             f.setAccessible(false);
         }

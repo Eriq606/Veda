@@ -104,8 +104,8 @@ public class DAO {
             connect=DAOConnexion.getConnexion(driver, server, host, port, database, user, pwd, useSSL, allowKeyRetrieval);
             opened=true;
         }
-        PreparedStatement statemnt=connect.prepareStatement(QueryUtils.getInsertQueryWithoutPrimary(c));
-        Field[] fields=QueryUtils.getColumnsWithoutPrimary(c);
+        PreparedStatement statemnt=connect.prepareStatement(QueryUtils.getInsertQueryWithoutPrimary(o));
+        Field[] fields=QueryUtils.getNotNullColumnsWithoutPrimary(o);
         statemnt=QueryUtils.mapStatement(statemnt, fields, o);
         try{
             statemnt.executeUpdate();
