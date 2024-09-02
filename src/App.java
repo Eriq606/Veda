@@ -167,4 +167,16 @@ public class App {
         where.setId(1);
         dao.update(null, change, where);
     }
+    private void hell(int[][] values){
+
+    }
+    @Test
+    public void testSwitch(){
+        class Hell{
+            Integer a;
+        }
+        Object e=null;
+        Hell el=(Hell)e;
+        System.out.println(el);
+    }
 }
