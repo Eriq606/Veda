@@ -134,6 +134,38 @@ public class DAO {
             statemnt.close();
         }
     }
+    public <T>void insertWithoutPrimaryKey(Connection connex, Class<T> c, T[] objects) throws Exception{
+        T o=objects[0];
+        boolean opened=false;
+        Connection connect=connex;
+        if(connect==null){
+            connect=DAOConnexion.getConnexion(driver, server, host, port, database, user, pwd, useSSL, allowKeyRetrieval);
+            opened=true;
+        }
+        PreparedStatement statemnt=connect.prepareStatement(QueryUtils.getInsertQueryWithoutPrimary(c, objects));
+        Field[] fields=QueryUtils.getNotNullColumnsWithoutPrimary(o);
+        int offset=0;
+        Object[] mapping;
+        try{
+            for(T t:objects){
+                mapping=QueryUtils.mapStatement(statemnt, fields, t, offset);
+                statemnt=(PreparedStatement)mapping[0];
+                offset=(int)mapping[1];
+            }
+            statemnt.executeUpdate();
+            if(opened){
+                connect.commit();
+            }
+        }catch(Exception e){
+            connect.rollback();
+            throw e;
+        }finally{
+            if(opened){
+                connect.close();
+            }
+            statemnt.close();
+        }
+    }
     public void insertWithPrimaryKey(Connection connex, Object o) throws Exception{
         Class c=o.getClass();
         boolean opened=false;

@@ -1,4 +1,5 @@
 import java.sql.Connection;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import org.junit.Test;
 
@@ -20,6 +21,9 @@ public class App {
         Integer iddept;
         @Column("label")
         String nom;
+        @Column("numero")
+        private Integer numero;
+
         public Integer getIddept() {
             return iddept;
         }
@@ -31,6 +35,22 @@ public class App {
         }
         public void setNom(String nom) {
             this.nom = nom;
+        }
+        
+        public Dept(String nom, Integer numero) {
+            this.nom = nom;
+            this.numero = numero;
+        }
+        public Dept() {
+        }
+        public Integer getNumero() {
+            return numero;
+        }
+        public void setNumero(Integer numero) {
+            this.numero = numero;
+        }
+        public Dept(Integer iddept) {
+            this.iddept = iddept;
         }
         
     }
@@ -64,6 +84,35 @@ public class App {
         public void setNom(String nom) {
             this.nom = nom;
         }
+        @Column("embauche")
+        private LocalDateTime embauche;
+        @Column("embauche_heure")
+        private LocalDateTime embHeure;
+        
+        public LocalDateTime getEmbauche() {
+            return embauche;
+        }
+        public void setEmbauche(LocalDateTime embauche) {
+            this.embauche = embauche;
+        }
+        public Emp(String nom, App.Dept dept, LocalDateTime embauche) {
+            this.nom = nom;
+            this.dept = dept;
+            this.embauche = embauche;
+        }
+        public Emp() {
+        }
+        public Emp(String string, App.Dept dept2) {
+            setNom(string);
+            setDept(dept2);
+        }
+        public LocalDateTime getEmbHeure() {
+            return embHeure;
+        }
+        public void setEmbHeure(LocalDateTime embHeure) {
+            this.embHeure = embHeure;
+        }
+        
         // public Double getAge() {
         //     return age;
         // }
@@ -114,10 +163,29 @@ public class App {
         // Dept dept2=new Dept();
         // System.out.println(dept1);
         // System.out.println(dept2);
-        DAO dao=new DAO("com.mysql.jdbc.Driver", "mysql", "multilingue", "localhost", "3306", "eriq", "root", false, true, 2);
-        try(Connection connect=DAOConnexion.getConnexion(dao)){
-            // EntityTable table=new EntityTable();0
-            HashMap<String, Object> contenu=dao.select(connect, String.format("select contenu_%s as contenu from contenu where idpage=%s", "de", "2"))[0];
+        DAO dao=new DAO("org.postgresql.Driver", "postgresql", "scott", "localhost", "5432", "eriq", "root", false, true, 2);
+        // try(Connection connect=DAOConnexion.getConnexion(dao)){
+        //     // EntityTable table=new EntityTable();0
+        //     HashMap<String, Object> contenu=dao.select(connect, String.format("select contenu_%s as contenu from contenu where idpage=%s", "de", "2"))[0];
+        // }
+        // Dept[] depts={
+        //     new Dept("Marketing", 3),
+        //     new Dept("Gestion", null)
+        // };
+        Emp[] emps={
+            new Emp("Luc", new Dept(100091)),
+            new Emp("Jeanne", new Dept(100091)),
+            new Emp("Bob", new Dept(100091))
+        };
+        Connection connect=DAOConnexion.getConnexion(dao);
+        try{
+            dao.insertWithoutPrimaryKey(connect, Emp.class, emps);
+            connect.commit();
+        }catch(Exception e){
+            connect.rollback();
+            throw e;
+        }finally{
+            connect.close();
         }
     }
     @Test

@@ -261,6 +261,34 @@ public class QueryUtils {
         }
         return query;
     }
+    public static <T>String getInsertQueryWithoutPrimary(Class<T> c, T[] objects) throws Exception{
+        T o=objects[0];
+        Annotation annote=c.getAnnotation(Table.class);
+        String table=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
+        String[] colonnes=getNotNullColumnNamesWithoutPrimary(o);
+        String query="insert into "+table+"(";
+        for(int i=0;i<colonnes.length;i++){
+            if(i==colonnes.length-1){
+                query+=colonnes[i]+")";
+                break;
+            }
+            query+=colonnes[i]+", ";
+        }
+        query+=" values";
+        for(int j=0;j<objects.length;j++){
+            query+="(";
+            for(int i=0;i<colonnes.length;i++){
+                if(i==colonnes.length-1){
+                    query+="?)";
+                    break;
+                }
+                query+="?, ";
+            }
+            query+=",";
+        }
+        query=query.substring(0, query.length()-1);
+        return query;
+    }
     public static String getInsertQueryWithPrimary(Class c) throws Exception{
         Annotation annote=c.getAnnotation(Table.class);
         String table=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
