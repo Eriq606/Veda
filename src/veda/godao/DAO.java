@@ -629,4 +629,31 @@ public class DAO {
             }
         }
     }
+    public static HashMap<String, Object> paginate(Connection connect, DAO dao, Class<?> c, int paginationLimit, Integer req_indice) throws Exception{
+        int indice_actu=1;
+        if(req_indice!=null){
+            indice_actu=req_indice;
+        }
+        boolean avec_suivant=true;
+        int nb_entrees=dao.count(connect, c);
+        if(nb_entrees-indice_actu*paginationLimit<=0){
+            avec_suivant=false;
+        }
+        int indice_premier=1;
+        int indice_precedent=indice_actu-1;
+        int indice_suivant=indice_actu+1;
+        int indice_dernier=((Double)Math.ceil(Double.valueOf(nb_entrees)/paginationLimit)).intValue();
+        String bouton_precedent=indice_precedent==0?"disabled":"";
+        String bouton_suivant=avec_suivant?"":"disabled";
+        HashMap<String, Object> response = new HashMap<>() {{
+            put("indice_premier", indice_premier);
+            put("indice_precedent", indice_precedent);
+            put("indice_suivant", indice_suivant);
+            put("indice_dernier", indice_dernier);
+            put("bouton_precedent", bouton_precedent);
+            put("bouton_suivant", bouton_suivant);
+        }};
+        response.put("indice_actu", indice_actu);
+        return response;
+    }
 }
