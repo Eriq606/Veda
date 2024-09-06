@@ -554,6 +554,18 @@ public class QueryUtils {
         query=String.format(query, tableName);
         return query;
     }
+    public static <T>String getCountQuery(Class<T> c, T where) throws Exception{
+        String query="select count(*) from %s where ";
+        Annotation annote=c.getAnnotation(Table.class);
+        String tableName=annote.annotationType().getMethod("value").invoke(annote).toString();
+        query=String.format(query, tableName);
+        String[] columns=getNotNullColumnNames(where);
+        for(String s:columns){
+            query+=s+"=? and ";
+        }
+        query=query.substring(0, query.length()-5);
+        return query;
+    }
     public static String getCreateTableQuery(EntityTable table, boolean temporary){
         String query="create ";
         if(temporary){

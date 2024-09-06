@@ -150,19 +150,6 @@ public class App {
         
     }
     public static void main(String[] args) throws Exception {
-        // Emp where=new Emp();
-        // where.setId(1);
-        // Dept dept=new Dept();
-        // dept.setIddept(1);
-        // Emp e=new Emp();
-        // e.nom="Ferry";
-        // e.setDept(dept);
-        // DAO dao=new DAO("scott", "localhost", "5432", "eriq", "root", false, Constantes.PSQL_ID);
-        // dao.update(null, e, where);
-        // Dept dept1=new Dept();
-        // Dept dept2=new Dept();
-        // System.out.println(dept1);
-        // System.out.println(dept2);
         DAO dao=new DAO("org.postgresql.Driver", "postgresql", "scott", "localhost", "5432", "eriq", "root", false, true, 2);
         // try(Connection connect=DAOConnexion.getConnexion(dao)){
         //     // EntityTable table=new EntityTable();0
@@ -172,17 +159,17 @@ public class App {
         //     new Dept("Marketing", 3),
         //     new Dept("Gestion", null)
         // };
-        Emp[] emps={
-            new Emp("Luc", new Dept(100091)),
-            new Emp("Jeanne", new Dept(100091)),
-            new Emp("Bob", new Dept(100091))
-        };
+        // Emp[] emps={
+        //     new Emp("Luc", new Dept(100091)),
+        //     new Emp("Jeanne", new Dept(100091)),
+        //     new Emp("Bob", new Dept(100091))
+        // };
         Connection connect=DAOConnexion.getConnexion(dao);
+        Emp where=new Emp(null, null, LocalDateTime.of(2024, 10, 10, 9, 0));
         try{
-            dao.insertWithoutPrimaryKey(connect, Emp.class, emps);
-            connect.commit();
+            System.out.println(dao.count(connect, Emp.class, where));
         }catch(Exception e){
-            connect.rollback();
+            // connect.rollback();
             throw e;
         }finally{
             connect.close();

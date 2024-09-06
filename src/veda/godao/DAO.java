@@ -417,6 +417,31 @@ public class DAO {
             }
         }
     }
+    public <T>int count(Connection connex, Class<T> c, T where) throws Exception{
+        boolean opened=false;
+        Connection connect=connex;
+        if(connect==null){
+            connect=DAOConnexion.getConnexion(driver, server, host, port, database, user, pwd, useSSL, allowKeyRetrieval);
+            opened=true;
+        }
+        PreparedStatement statement=connect.prepareStatement(QueryUtils.getCountQuery(c, where));
+        Field[] columns=QueryUtils.getNotNullColumns(where);
+        statement=QueryUtils.mapStatement(statement, columns, where);
+        int compte=0;
+        try{
+            try(ResultSet result=statement.executeQuery()){
+                if(result.next()){
+                    compte=result.getInt(1);
+                }
+            }
+            return compte;
+        }finally{
+            statement.close();
+            if(opened){
+                connect.close();
+            }
+        }
+    }
     public String getDriver() {
         return driver;
     }
