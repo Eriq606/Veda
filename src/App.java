@@ -167,7 +167,10 @@ public class App {
         Connection connect=DAOConnexion.getConnexion(dao);
         Emp where=new Emp(null, null, LocalDateTime.of(2024, 10, 10, 9, 0));
         try{
-            System.out.println(dao.count(connect, Emp.class, where));
+            Emp[] emps=dao.select(connect, Emp.class, where, 2, 2);
+            for(Emp e:emps){
+                System.out.println(e.getNom());
+            }
         }catch(Exception e){
             // connect.rollback();
             throw e;
