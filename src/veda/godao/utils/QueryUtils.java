@@ -562,7 +562,7 @@ public class QueryUtils {
                     f.set(obj, result.getTime(entry.getValue()).toLocalTime());
                 }
             }catch(PSQLException e){
-                if(e.getMessage().endsWith("not found in this ResultSet")){
+                if(e.getMessage().contains("not found in this ResultSet")){
                     continue;
                 }else{
                     throw e;
