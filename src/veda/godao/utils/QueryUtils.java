@@ -16,6 +16,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
+import org.postgresql.util.PSQLException;
+
 import veda.EntityTable;
 import veda.godao.DAO;
 import veda.godao.annotations.Column;
@@ -543,22 +545,31 @@ public class QueryUtils {
             }
             String fieldType=type.getSimpleName();
             String fieldName=f.getName();
-            if(fieldType.equals("Integer")){
-                Integer val=Integer.valueOf(result.getInt(entry.getValue()));
-                c.getMethod("set"+StringUtils.majStart(fieldName), f.getType()).invoke(obj, val);
-            }else if(fieldType.equals("String")){
-                f.set(obj, result.getString(entry.getValue()));
-            }else if(fieldType.equals("Double")){
-                Double val=Double.valueOf(result.getDouble(entry.getValue()));
-                c.getMethod("set"+StringUtils.majStart(fieldName), f.getType()).invoke(obj, val);
-            }else if(fieldType.equals("LocalDate")){
-                f.set(obj, result.getDate(entry.getValue()).toLocalDate());
-            }else if(fieldType.equals("LocalDateTime")){
-                f.set(obj, result.getTimestamp(entry.getValue()).toLocalDateTime());
-            }else if(fieldType.equals("LocalTime")){
-                f.set(obj, result.getTime(entry.getValue()).toLocalTime());
+            try{
+                if(fieldType.equals("Integer")){
+                    Integer val=Integer.valueOf(result.getInt(entry.getValue()));
+                    c.getMethod("set"+StringUtils.majStart(fieldName), f.getType()).invoke(obj, val);
+                }else if(fieldType.equals("String")){
+                    f.set(obj, result.getString(entry.getValue()));
+                }else if(fieldType.equals("Double")){
+                    Double val=Double.valueOf(result.getDouble(entry.getValue()));
+                    c.getMethod("set"+StringUtils.majStart(fieldName), f.getType()).invoke(obj, val);
+                }else if(fieldType.equals("LocalDate")){
+                    f.set(obj, result.getDate(entry.getValue()).toLocalDate());
+                }else if(fieldType.equals("LocalDateTime")){
+                    f.set(obj, result.getTimestamp(entry.getValue()).toLocalDateTime());
+                }else if(fieldType.equals("LocalTime")){
+                    f.set(obj, result.getTime(entry.getValue()).toLocalTime());
+                }
+            }catch(PSQLException e){
+                if(e.getMessage().endsWith("not found in this ResultSet")){
+                    continue;
+                }else{
+                    throw e;
+                }
+            }finally{
+                f.setAccessible(false);
             }
-            f.setAccessible(false);
         }
         return obj;
     }
