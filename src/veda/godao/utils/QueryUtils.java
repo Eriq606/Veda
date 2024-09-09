@@ -327,8 +327,8 @@ public class QueryUtils {
         String table=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
         Field primaryField=getPrimaryField(c);
         annote=primaryField.getAnnotation(Column.class);
-        String primaryColumn=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
-        String query="select * from "+table+" order by "+primaryColumn+" "+addOn;
+        // String primaryColumn=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
+        String query="select * from "+table+" "+addOn;
         return query;
     }
     public static String getSelectQuery(Class c, int limit, int offset) throws Exception{
