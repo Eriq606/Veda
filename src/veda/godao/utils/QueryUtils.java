@@ -580,8 +580,8 @@ public class QueryUtils {
                 }else if(fieldType.equals("LocalTime")){
                     f.set(obj, result.getTime(entry.getValue()).toLocalTime());
                 }
-            }catch(PSQLException e){
-                if(e.getMessage().contains("not found in this ResultSet")){
+            }catch(PSQLException|NullPointerException e){
+                if(e.getMessage().contains("not found in this ResultSet")||e.getMessage().contains("return value")){
                     continue;
                 }else{
                     throw e;
