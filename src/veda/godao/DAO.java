@@ -223,6 +223,35 @@ public class DAO {
             statemnt.close();
         }
     }
+    public <T>T[] select(Connection connex, Class<T> c, String addOn) throws Exception{
+        boolean opened=false;
+        Connection connect=connex;
+        if(connect==null){
+            connect=DAOConnexion.getConnexion(driver, server, host, port, database, user, pwd, useSSL, allowKeyRetrieval);
+            opened=true;
+        }
+        PreparedStatement statemnt=connect.prepareStatement(QueryUtils.getSelectQuery(c, addOn));
+        HashMap<Field, String> columns=QueryUtils.getColumnsWithField(c);
+        try{
+            LinkedList liste=new LinkedList();
+            ResultSet result=statemnt.executeQuery();
+            while(result.next()){
+                T obj=(T)c.getConstructor().newInstance();
+                obj=(T)QueryUtils.mapResultSet(connect, result, obj, columns, this);
+                liste.add(obj);
+            }
+            T[] objets=(T[])Array.newInstance(c, liste.size());
+            for(int i=0;i<objets.length;i++){
+                objets[i]=(T)liste.get(i);
+            }
+            return objets;
+        }finally{
+            if(opened){
+                connect.close();
+            }
+            statemnt.close();
+        }
+    }
     public <T>T[] select(Connection connex, Class<T> c, int limit, int offset) throws Exception{
         boolean opened=false;
         Connection connect=connex;

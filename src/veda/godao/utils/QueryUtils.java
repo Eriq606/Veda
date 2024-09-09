@@ -322,6 +322,15 @@ public class QueryUtils {
         String query="select * from "+table+" order by "+primaryColumn;
         return query;
     }
+    public static String getSelectQuery(Class c, String addOn) throws Exception{
+        Annotation annote=c.getAnnotation(Table.class);
+        String table=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
+        Field primaryField=getPrimaryField(c);
+        annote=primaryField.getAnnotation(Column.class);
+        String primaryColumn=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
+        String query="select * from "+table+" order by "+primaryColumn+" "+addOn;
+        return query;
+    }
     public static String getSelectQuery(Class c, int limit, int offset) throws Exception{
         Annotation annote=c.getAnnotation(Table.class);
         String table=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
