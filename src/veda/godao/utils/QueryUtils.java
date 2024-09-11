@@ -374,6 +374,24 @@ public class QueryUtils {
         query+=" limit "+limit+" offset "+offset;
         return query;
     }
+    public static <T>String getSelectQuery(Class<T> c, T where, String[] order) throws Exception{
+        Annotation annote=c.getAnnotation(Table.class);
+        String table=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
+        Field primaryField=getPrimaryField(c);
+        annote=primaryField.getAnnotation(Column.class);
+        // String primaryColumn=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
+        String query="select * from "+table+" where ";
+        String[] columns=getNotNullColumnNames(where);
+        for(String s:columns){
+            query+=s+"=? and ";
+        }
+        query=query.substring(0, query.length()-5)+" order by ";
+        for(String s:order){
+            query+=s+", ";
+        }
+        query=query.substring(0, query.length()-2);
+        return query;
+    }
     public static String getSelectQuery(Class c, Object where) throws Exception{
         Annotation annote=c.getAnnotation(Table.class);
         String table=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
