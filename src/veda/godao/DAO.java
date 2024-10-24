@@ -223,6 +223,35 @@ public class DAO {
             statemnt.close();
         }
     }
+    public <T>T[] select(Connection connex, String query, Class<T> clazz) throws Exception{
+        boolean opened=false;
+        Connection connect=connex;
+        if(connect==null){
+            connect=DAOConnexion.getConnexion(this);
+            opened=true;
+        }
+        PreparedStatement statement=connect.prepareStatement(query);
+        HashMap<Field, String> columns=QueryUtils.getColumnsWithFieldWithoutPrimary(clazz);
+        try(ResultSet result=statement.executeQuery()){
+            LinkedList<T> liste=new LinkedList<>();
+            T obj;
+            while(result.next()){
+                obj=clazz.getConstructor().newInstance();
+                obj=(T) QueryUtils.mapResultSet(connect, result, obj, columns, this);
+                liste.add(obj);
+            }
+            T[] objets=(T[])Array.newInstance(clazz, liste.size());
+            for(int i=0;i<objets.length;i++){
+                objets[i]=(T)liste.get(i);
+            }
+            return objets;
+        }finally{
+            statement.close();
+            if(opened){
+                connect.close();
+            }
+        }
+    }
     public <T>T[] select(Connection connex, Class<T> c, String addOn) throws Exception{
         boolean opened=false;
         Connection connect=connex;
@@ -568,6 +597,31 @@ public class DAO {
             }
         }
     }
+    public <T>int count(Connection connex, String query) throws Exception{
+        boolean opened=false;
+        Connection connect=connex;
+        if(connect==null){
+            connect=DAOConnexion.getConnexion(driver, server, host, port, database, user, pwd, useSSL, allowKeyRetrieval);
+            opened=true;
+        }
+        PreparedStatement statement=connect.prepareStatement(query);
+        // Field[] columns=QueryUtils.getNotNullColumns(where);
+        // statement=QueryUtils.mapStatement(statement, columns, where);
+        int compte=0;
+        try{
+            try(ResultSet result=statement.executeQuery()){
+                if(result.next()){
+                    compte=result.getInt(1);
+                }
+            }
+            return compte;
+        }finally{
+            statement.close();
+            if(opened){
+                connect.close();
+            }
+        }
+    }
     public String getDriver() {
         return driver;
     }
@@ -789,6 +843,33 @@ public class DAO {
         }
         boolean avec_suivant=true;
         int nb_entrees=count(connect, c, where);
+        if(nb_entrees-indice_actu*paginationLimit<=0){
+            avec_suivant=false;
+        }
+        int indice_premier=1;
+        int indice_precedent=indice_actu-1;
+        int indice_suivant=indice_actu+1;
+        int indice_dernier=((Double)Math.ceil(Double.valueOf(nb_entrees)/paginationLimit)).intValue();
+        String bouton_precedent=indice_precedent==0?"disabled":"";
+        String bouton_suivant=avec_suivant?"":"disabled";
+        HashMap<String, Object> response = new HashMap<>() {{
+            put("indice_premier", indice_premier);
+            put("indice_precedent", indice_precedent);
+            put("indice_suivant", indice_suivant);
+            put("indice_dernier", indice_dernier);
+            put("bouton_precedent", bouton_precedent);
+            put("bouton_suivant", bouton_suivant);
+        }};
+        response.put("indice_actu", indice_actu);
+        return response;
+    }
+    public <T>HashMap<String, Object> paginate(Connection connect, String query, int paginationLimit, Integer req_indice) throws Exception{
+        int indice_actu=1;
+        if(req_indice!=null){
+            indice_actu=req_indice;
+        }
+        boolean avec_suivant=true;
+        int nb_entrees=count(connect, query);
         if(nb_entrees-indice_actu*paginationLimit<=0){
             avec_suivant=false;
         }

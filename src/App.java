@@ -1,6 +1,10 @@
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.LinkedList;
+
 import org.junit.Test;
 
 import veda.EntityTable;
@@ -51,6 +55,10 @@ public class App {
         }
         public Dept(Integer iddept) {
             this.iddept = iddept;
+        }
+        @Override
+        public String toString() {
+            return "Dept [iddept=" + iddept + ", nom=" + nom + ", numero=" + numero + "]";
         }
         
     }
@@ -112,6 +120,11 @@ public class App {
         public void setEmbHeure(LocalDateTime embHeure) {
             this.embHeure = embHeure;
         }
+        @Override
+        public String toString() {
+            return "Emp [id=" + id + ", nom=" + nom + ", dept=" + dept + ", embauche=" + embauche + ", embHeure="
+                    + embHeure + "]";
+        }
         
         // public Double getAge() {
         //     return age;
@@ -164,19 +177,31 @@ public class App {
         //     new Emp("Jeanne", new Dept(100091)),
         //     new Emp("Bob", new Dept(100091))
         // };
-        Connection connect=DAOConnexion.getConnexion(dao);
-        Emp where=new Emp(null, null, LocalDateTime.of(2024, 10, 10, 9, 0));
-        try{
-            Emp[] emps=dao.select(connect, Emp.class, where, 2, 2);
-            for(Emp e:emps){
-                System.out.println(e.getNom());
+        try(Connection connect=DAOConnexion.getConnexion(dao);
+            PreparedStatement statement=connect.prepareStatement("select * from emp");
+            ResultSet result=statement.executeQuery();
+            PreparedStatement statement2=connect.prepareStatement("select count(*) from emp");
+            ResultSet compte=statement2.executeQuery()){
+            int size=compte.next()?compte.getInt(1):0;
+            Emp[] emps=new Emp[size];
+            for(int i=0;result.next();i++){
+                emps[i]=new Emp(result.getString("label"), null, result.getTimestamp("embauche_heure").toLocalDateTime());
+                System.out.println(emps[i]);
             }
-        }catch(Exception e){
-            // connect.rollback();
-            throw e;
-        }finally{
-            connect.close();
         }
+        // Emp where=new Emp(null, null, LocalDateTime.of(2024, 10, 10, 9, 0));
+        // try{
+        //     Emp[] emps=dao.select(connect, Emp.class, where, 2, 2);
+        //     for(Emp e:emps){
+        //         System.out.println(e.getNom());
+        //     }
+        // }catch(Exception e){
+        //     // connect.rollback();
+        //     throw e;
+        // }finally{
+        //     connect.close();
+        // }
+
     }
     @Test
     public void insertEmp() throws Exception{

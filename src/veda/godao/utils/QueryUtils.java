@@ -218,6 +218,20 @@ public class QueryUtils {
         }
         return colonnes;
     }
+    public static HashMap<Field, String> getColumnsWithFieldWithoutPrimary(Class c) throws Exception{
+        HashMap<Field, String> colonnes=new HashMap<>();
+        Field[] fields=c.getDeclaredFields();
+        for(Field f:fields){
+            Annotation primaryAnnote=f.getAnnotation(PrimaryKey.class);
+            Annotation annote=f.getAnnotation(Column.class);
+            if(annote==null||primaryAnnote!=null){
+                continue;
+            }
+            String columnName=annote.annotationType().getMethod(Constantes.COLUMN_VALUE).invoke(annote).toString();
+            colonnes.put(f, columnName);
+        }
+        return colonnes;
+    }
     public static String getInsertQueryWithoutPrimary(Class c) throws Exception{
         Annotation annote=c.getAnnotation(Table.class);
         String table=annote.annotationType().getMethod(Constantes.TABLE_VALUE).invoke(annote).toString();
@@ -564,9 +578,6 @@ public class QueryUtils {
             Annotation annote=f.getAnnotation(ForeignKey.class);
             if(annote!=null){
                 boolean recursive=(boolean)annote.annotationType().getMethod("recursive").invoke(annote);
-                if(recursive==false){
-                    continue;
-                }
                 Object foreignValue=type.getConstructor().newInstance();
                 Field primary=getPrimaryField(type);
                 String fieldType=primary.getType().getSimpleName();
@@ -585,8 +596,12 @@ public class QueryUtils {
                 }else if(fieldType.equals("LocalTime")){
                     primary.set(foreignValue, result.getTime(entry.getValue()).toLocalTime());
                 }
-                Object objet=dao.select(connex, type, foreignValue)[0];
-                f.set(obj, objet);
+                if(recursive==false){
+                    f.set(obj, foreignValue);
+                }else{
+                    Object objet=dao.select(connex, type, foreignValue)[0];
+                    f.set(obj, objet);
+                }
                 continue;
             }
             String fieldType=type.getSimpleName();

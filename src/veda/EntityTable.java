@@ -5,6 +5,10 @@ import java.util.HashMap;
 public class EntityTable {
     private String nom;
     private HashMap<String, String> colonnes;
+    
+    public EntityTable() {
+        colonnes=new HashMap<>();
+    }
     public String getNom() {
         return nom;
     }
